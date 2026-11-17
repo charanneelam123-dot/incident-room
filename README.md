@@ -1,5 +1,7 @@
 # Incident Room
 
+[![Checks](https://github.com/charanneelam123-dot/incident-room/actions/workflows/checks.yml/badge.svg)](https://github.com/charanneelam123-dot/incident-room/actions/workflows/checks.yml)
+
 Checkout is timing out. Payments is noisy. A release went out five minutes ago.
 What would you check first?
 
