@@ -1,0 +1,415 @@
+{
+  "id": "demo-inventory-cache",
+  "scenario": "inventory-cache",
+  "mode": "replay",
+  "status": "complete",
+  "events": [
+    {
+      "index": 1,
+      "time": "step-1",
+      "kind": "started",
+      "title": "Investigation started",
+      "mode": "replay",
+      "alert": "The storefront shows stock that the order service rejects. Error rates are low. Check inventory consistency rather than assuming the database is down."
+    },
+    {
+      "index": 2,
+      "time": "step-2",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E1",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 3200,
+            "errors": 2,
+            "error_percent": 0.06,
+            "p95_ms": 80,
+            "db_connections": 8
+          },
+          {
+            "window": "after",
+            "requests": 3300,
+            "errors": 3,
+            "error_percent": 0.09,
+            "p95_ms": 65,
+            "db_connections": 8
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 3,
+      "time": "step-3",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E2",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "time": "11:31:00",
+            "service": "inventory",
+            "level": "INFO",
+            "message": "Flag inventory-cache-v2 enabled. Cache refresh worker disabled by flag branch."
+          },
+          {
+            "time": "11:35:00",
+            "service": "inventory",
+            "level": "WARN",
+            "message": "stale cache: snapshot age 1800 seconds; source quantity=0, cached quantity=12 for demo-product-7"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 4,
+      "time": "step-4",
+      "kind": "observation",
+      "title": "deployments",
+      "evidence_id": "E3",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "service": "inventory",
+            "release": "inventory-v9",
+            "previous": "inventory-v8",
+            "time": "11:30",
+            "change": "inventory-cache-v2 flag enabled"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    {
+      "index": 5,
+      "time": "step-5",
+      "kind": "observation",
+      "title": "search_runbooks",
+      "evidence_id": "E4",
+      "arguments": {
+        "query": "stale cache"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-3",
+            "title": "Stale inventory cache",
+            "text": "Compare cached quantity with the authoritative inventory observation. Low HTTP error rates do not prove data freshness. If the inventory-cache-v2 flag disabled refresh, consider turning the flag off in the sandbox after human review. Confirm both the timestamp and source quantity before proposing a change.",
+            "score": 2.9239
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    {
+      "index": 6,
+      "time": "step-6",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E5",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1200,
+            "errors": 5,
+            "error_percent": 0.42,
+            "p95_ms": 210,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 1220,
+            "errors": 100,
+            "error_percent": 8.2,
+            "p95_ms": 215,
+            "db_connections": 18
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 7,
+      "time": "step-7",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E6",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "11:35:02",
+            "service": "checkout",
+            "level": "WARN",
+            "message": "order rejected: authoritative inventory says out of stock for demo-product-7"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 8,
+      "time": "step-8",
+      "kind": "observation",
+      "title": "propose_action",
+      "evidence_id": "E7",
+      "arguments": {
+        "kind": "disable_feature_flag",
+        "service": "inventory",
+        "target": "inventory-cache-v2",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "disable_feature_flag",
+          "service": "inventory",
+          "target": "inventory-cache-v2",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    },
+    {
+      "index": 9,
+      "time": "step-9",
+      "kind": "complete",
+      "title": "Evidence references checked; report ready"
+    }
+  ],
+  "evidence": {
+    "E1": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 3200,
+            "errors": 2,
+            "error_percent": 0.06,
+            "p95_ms": 80,
+            "db_connections": 8
+          },
+          {
+            "window": "after",
+            "requests": 3300,
+            "errors": 3,
+            "error_percent": 0.09,
+            "p95_ms": 65,
+            "db_connections": 8
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E2": {
+      "tool": "logs",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "time": "11:31:00",
+            "service": "inventory",
+            "level": "INFO",
+            "message": "Flag inventory-cache-v2 enabled. Cache refresh worker disabled by flag branch."
+          },
+          {
+            "time": "11:35:00",
+            "service": "inventory",
+            "level": "WARN",
+            "message": "stale cache: snapshot age 1800 seconds; source quantity=0, cached quantity=12 for demo-product-7"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E3": {
+      "tool": "deployments",
+      "arguments": {
+        "service": "inventory"
+      },
+      "result": {
+        "service": "inventory",
+        "rows": [
+          {
+            "service": "inventory",
+            "release": "inventory-v9",
+            "previous": "inventory-v8",
+            "time": "11:30",
+            "change": "inventory-cache-v2 flag enabled"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    "E4": {
+      "tool": "search_runbooks",
+      "arguments": {
+        "query": "stale cache"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-3",
+            "title": "Stale inventory cache",
+            "text": "Compare cached quantity with the authoritative inventory observation. Low HTTP error rates do not prove data freshness. If the inventory-cache-v2 flag disabled refresh, consider turning the flag off in the sandbox after human review. Confirm both the timestamp and source quantity before proposing a change.",
+            "score": 2.9239
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    "E5": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1200,
+            "errors": 5,
+            "error_percent": 0.42,
+            "p95_ms": 210,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 1220,
+            "errors": 100,
+            "error_percent": 8.2,
+            "p95_ms": 215,
+            "db_connections": 18
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E6": {
+      "tool": "logs",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "11:35:02",
+            "service": "checkout",
+            "level": "WARN",
+            "message": "order rejected: authoritative inventory says out of stock for demo-product-7"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E7": {
+      "tool": "propose_action",
+      "arguments": {
+        "kind": "disable_feature_flag",
+        "service": "inventory",
+        "target": "inventory-cache-v2",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "disable_feature_flag",
+          "service": "inventory",
+          "target": "inventory-cache-v2",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "action-1",
+      "kind": "disable_feature_flag",
+      "service": "inventory",
+      "target": "inventory-cache-v2",
+      "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+      "evidence_ids": [
+        "E2",
+        "E3"
+      ],
+      "environment": "sandbox",
+      "status": "pending_approval",
+      "version": 0
+    }
+  ],
+  "answer": {
+    "diagnosis": "stale cache",
+    "summary": "The observations are consistent with stale cache. This is the scripted example diagnosis, not an independently measured model result.",
+    "confidence": "medium",
+    "alternative": "Inspected checkout telemetry and logs. A separate failure there is less consistent with this fixture; causality still needs a recovery check.",
+    "next_step": "Review the proposed action, then compare fresh error rates and the original symptom. The sandbox records approval but does not generate real recovery data.",
+    "findings": [
+      {
+        "statement": "The affected service logs contain a direct diagnostic signal.",
+        "evidence_id": "E2",
+        "quote": "stale cache: snapshot age 1800 seconds; source quantity=0, cached quantity=12 for demo-product-7"
+      }
+    ]
+  },
+  "usage": {},
+  "errors": [],
+  "tool_calls": 7,
+  "elapsed_ms": null,
+  "decisions": []
+}

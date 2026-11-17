@@ -1,0 +1,20 @@
+[
+  {
+    "id": "checkout-pool",
+    "title": "Checkout is timing out",
+    "alert": "Checkout errors rose after the 14:05 release. Payments looks noisy too. Find the likely cause and propose a safe next step.",
+    "service": "checkout"
+  },
+  {
+    "id": "payments-key",
+    "title": "Every payment is being declined",
+    "alert": "Payment success dropped suddenly at 09:00. There was no release this morning. Investigate before proposing a rollback.",
+    "service": "payments"
+  },
+  {
+    "id": "inventory-cache",
+    "title": "Sold-out products still look available",
+    "alert": "The storefront shows stock that the order service rejects. Error rates are low. Check inventory consistency rather than assuming the database is down.",
+    "service": "inventory"
+  }
+]

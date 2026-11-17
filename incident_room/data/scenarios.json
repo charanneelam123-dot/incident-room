@@ -1,0 +1,66 @@
+[
+  {
+    "id": "checkout-pool",
+    "title": "Checkout is timing out",
+    "alert": "Checkout errors rose after the 14:05 release. Payments looks noisy too. Find the likely cause and propose a safe next step.",
+    "service": "checkout",
+    "expected_diagnosis": "connection pool",
+    "expected_action": "rollback_release",
+    "metrics": [
+      {"service":"checkout","window":"before","requests":2400,"errors":12,"p95_ms":210,"db_connections":18},
+      {"service":"checkout","window":"after","requests":2440,"errors":610,"p95_ms":8900,"db_connections":100},
+      {"service":"payments","window":"before","requests":2300,"errors":10,"p95_ms":180,"db_connections":12},
+      {"service":"payments","window":"after","requests":1810,"errors":12,"p95_ms":190,"db_connections":13}
+    ],
+    "logs": [
+      {"time":"14:05:03","service":"checkout","level":"INFO","message":"Release checkout-v42 activated; DB_POOL_SIZE changed from 20 to 100."},
+      {"time":"14:06:11","service":"checkout","level":"ERROR","message":"database connection pool exhausted; timed out waiting for connection"},
+      {"time":"14:06:19","service":"checkout","level":"ERROR","message":"database rejected connection: connection limit 100 reached"},
+      {"time":"14:06:20","service":"payments","level":"WARN","message":"upstream checkout cancelled request before payment authorization"}
+    ],
+    "deployments": [{"service":"checkout","release":"checkout-v42","previous":"checkout-v41","time":"14:05","change":"DB_POOL_SIZE raised to 100 on each replica"}],
+    "allowed_action": {"kind":"rollback_release","service":"checkout","target":"checkout-v41"}
+  },
+  {
+    "id": "payments-key",
+    "title": "Every payment is being declined",
+    "alert": "Payment success dropped suddenly at 09:00. There was no release this morning. Investigate before proposing a rollback.",
+    "service": "payments",
+    "expected_diagnosis": "expired credential",
+    "expected_action": "rotate_test_credential",
+    "metrics": [
+      {"service":"payments","window":"before","requests":1200,"errors":4,"p95_ms":180,"db_connections":10},
+      {"service":"payments","window":"after","requests":1190,"errors":1180,"p95_ms":90,"db_connections":10},
+      {"service":"checkout","window":"before","requests":1250,"errors":5,"p95_ms":240,"db_connections":18},
+      {"service":"checkout","window":"after","requests":1240,"errors":1175,"p95_ms":250,"db_connections":18}
+    ],
+    "logs": [
+      {"time":"09:00:00","service":"payments","level":"ERROR","message":"provider response 401: expired credential payments-test-key-7; expiry 09:00 UTC"},
+      {"time":"09:00:03","service":"payments","level":"ERROR","message":"authorization rejected before transaction creation"},
+      {"time":"09:00:04","service":"checkout","level":"WARN","message":"payment provider authorization unavailable"}
+    ],
+    "deployments": [{"service":"payments","release":"payments-v18","previous":"payments-v17","time":"yesterday 16:00","change":"log formatting only"}],
+    "allowed_action": {"kind":"rotate_test_credential","service":"payments","target":"payments-test-key-8"}
+  },
+  {
+    "id": "inventory-cache",
+    "title": "Sold-out products still look available",
+    "alert": "The storefront shows stock that the order service rejects. Error rates are low. Check inventory consistency rather than assuming the database is down.",
+    "service": "inventory",
+    "expected_diagnosis": "stale cache",
+    "expected_action": "disable_feature_flag",
+    "metrics": [
+      {"service":"inventory","window":"before","requests":3200,"errors":2,"p95_ms":80,"db_connections":8},
+      {"service":"inventory","window":"after","requests":3300,"errors":3,"p95_ms":65,"db_connections":8},
+      {"service":"checkout","window":"before","requests":1200,"errors":5,"p95_ms":210,"db_connections":18},
+      {"service":"checkout","window":"after","requests":1220,"errors":100,"p95_ms":215,"db_connections":18}
+    ],
+    "logs": [
+      {"time":"11:31:00","service":"inventory","level":"INFO","message":"Flag inventory-cache-v2 enabled. Cache refresh worker disabled by flag branch."},
+      {"time":"11:35:00","service":"inventory","level":"WARN","message":"stale cache: snapshot age 1800 seconds; source quantity=0, cached quantity=12 for demo-product-7"},
+      {"time":"11:35:02","service":"checkout","level":"WARN","message":"order rejected: authoritative inventory says out of stock for demo-product-7"}
+    ],
+    "deployments": [{"service":"inventory","release":"inventory-v9","previous":"inventory-v8","time":"11:30","change":"inventory-cache-v2 flag enabled"}],
+    "allowed_action": {"kind":"disable_feature_flag","service":"inventory","target":"inventory-cache-v2"}
+  }
+]

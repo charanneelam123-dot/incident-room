@@ -1,0 +1,427 @@
+{
+  "id": "demo-checkout-pool",
+  "scenario": "checkout-pool",
+  "mode": "replay",
+  "status": "complete",
+  "events": [
+    {
+      "index": 1,
+      "time": "step-1",
+      "kind": "started",
+      "title": "Investigation started",
+      "mode": "replay",
+      "alert": "Checkout errors rose after the 14:05 release. Payments looks noisy too. Find the likely cause and propose a safe next step."
+    },
+    {
+      "index": 2,
+      "time": "step-2",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E1",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 2400,
+            "errors": 12,
+            "error_percent": 0.5,
+            "p95_ms": 210,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 2440,
+            "errors": 610,
+            "error_percent": 25.0,
+            "p95_ms": 8900,
+            "db_connections": 100
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 3,
+      "time": "step-3",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E2",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "14:05:03",
+            "service": "checkout",
+            "level": "INFO",
+            "message": "Release checkout-v42 activated; DB_POOL_SIZE changed from 20 to 100."
+          },
+          {
+            "time": "14:06:11",
+            "service": "checkout",
+            "level": "ERROR",
+            "message": "database connection pool exhausted; timed out waiting for connection"
+          },
+          {
+            "time": "14:06:19",
+            "service": "checkout",
+            "level": "ERROR",
+            "message": "database rejected connection: connection limit 100 reached"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 4,
+      "time": "step-4",
+      "kind": "observation",
+      "title": "deployments",
+      "evidence_id": "E3",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "service": "checkout",
+            "release": "checkout-v42",
+            "previous": "checkout-v41",
+            "time": "14:05",
+            "change": "DB_POOL_SIZE raised to 100 on each replica"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    {
+      "index": 5,
+      "time": "step-5",
+      "kind": "observation",
+      "title": "search_runbooks",
+      "evidence_id": "E4",
+      "arguments": {
+        "query": "connection pool"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-1",
+            "title": "Database connection pool exhaustion",
+            "text": "If timeouts follow a release, compare before/after database connections and inspect the release configuration. Each replica owns its own connection pool. A per-replica pool increase can exceed the database's shared limit. Consider rolling back the implicated release after human review. Error rates alone do not identify the cause.",
+            "score": 3.6241
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    {
+      "index": 6,
+      "time": "step-6",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E5",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 2300,
+            "errors": 10,
+            "error_percent": 0.43,
+            "p95_ms": 180,
+            "db_connections": 12
+          },
+          {
+            "window": "after",
+            "requests": 1810,
+            "errors": 12,
+            "error_percent": 0.66,
+            "p95_ms": 190,
+            "db_connections": 13
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 7,
+      "time": "step-7",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E6",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "time": "14:06:20",
+            "service": "payments",
+            "level": "WARN",
+            "message": "upstream checkout cancelled request before payment authorization"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 8,
+      "time": "step-8",
+      "kind": "observation",
+      "title": "propose_action",
+      "evidence_id": "E7",
+      "arguments": {
+        "kind": "rollback_release",
+        "service": "checkout",
+        "target": "checkout-v41",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "rollback_release",
+          "service": "checkout",
+          "target": "checkout-v41",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    },
+    {
+      "index": 9,
+      "time": "step-9",
+      "kind": "complete",
+      "title": "Evidence references checked; report ready"
+    }
+  ],
+  "evidence": {
+    "E1": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 2400,
+            "errors": 12,
+            "error_percent": 0.5,
+            "p95_ms": 210,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 2440,
+            "errors": 610,
+            "error_percent": 25.0,
+            "p95_ms": 8900,
+            "db_connections": 100
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E2": {
+      "tool": "logs",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "14:05:03",
+            "service": "checkout",
+            "level": "INFO",
+            "message": "Release checkout-v42 activated; DB_POOL_SIZE changed from 20 to 100."
+          },
+          {
+            "time": "14:06:11",
+            "service": "checkout",
+            "level": "ERROR",
+            "message": "database connection pool exhausted; timed out waiting for connection"
+          },
+          {
+            "time": "14:06:19",
+            "service": "checkout",
+            "level": "ERROR",
+            "message": "database rejected connection: connection limit 100 reached"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E3": {
+      "tool": "deployments",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "service": "checkout",
+            "release": "checkout-v42",
+            "previous": "checkout-v41",
+            "time": "14:05",
+            "change": "DB_POOL_SIZE raised to 100 on each replica"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    "E4": {
+      "tool": "search_runbooks",
+      "arguments": {
+        "query": "connection pool"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-1",
+            "title": "Database connection pool exhaustion",
+            "text": "If timeouts follow a release, compare before/after database connections and inspect the release configuration. Each replica owns its own connection pool. A per-replica pool increase can exceed the database's shared limit. Consider rolling back the implicated release after human review. Error rates alone do not identify the cause.",
+            "score": 3.6241
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    "E5": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 2300,
+            "errors": 10,
+            "error_percent": 0.43,
+            "p95_ms": 180,
+            "db_connections": 12
+          },
+          {
+            "window": "after",
+            "requests": 1810,
+            "errors": 12,
+            "error_percent": 0.66,
+            "p95_ms": 190,
+            "db_connections": 13
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E6": {
+      "tool": "logs",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "time": "14:06:20",
+            "service": "payments",
+            "level": "WARN",
+            "message": "upstream checkout cancelled request before payment authorization"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E7": {
+      "tool": "propose_action",
+      "arguments": {
+        "kind": "rollback_release",
+        "service": "checkout",
+        "target": "checkout-v41",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "rollback_release",
+          "service": "checkout",
+          "target": "checkout-v41",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "action-1",
+      "kind": "rollback_release",
+      "service": "checkout",
+      "target": "checkout-v41",
+      "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+      "evidence_ids": [
+        "E2",
+        "E3"
+      ],
+      "environment": "sandbox",
+      "status": "pending_approval",
+      "version": 0
+    }
+  ],
+  "answer": {
+    "diagnosis": "connection pool",
+    "summary": "The observations are consistent with connection pool. This is the scripted example diagnosis, not an independently measured model result.",
+    "confidence": "medium",
+    "alternative": "Inspected payments telemetry and logs. A separate failure there is less consistent with this fixture; causality still needs a recovery check.",
+    "next_step": "Review the proposed action, then compare fresh error rates and the original symptom. The sandbox records approval but does not generate real recovery data.",
+    "findings": [
+      {
+        "statement": "The affected service logs contain a direct diagnostic signal.",
+        "evidence_id": "E2",
+        "quote": "database connection pool exhausted; timed out waiting for connection"
+      }
+    ]
+  },
+  "usage": {},
+  "errors": [],
+  "tool_calls": 7,
+  "elapsed_ms": null,
+  "decisions": []
+}

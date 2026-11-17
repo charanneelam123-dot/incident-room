@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.sqlite*
+*.egg-info/
+build/
+reports/
+.openai/*.zip
+.openai/workflow*.json

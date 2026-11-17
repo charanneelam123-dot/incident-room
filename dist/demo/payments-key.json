@@ -1,0 +1,415 @@
+{
+  "id": "demo-payments-key",
+  "scenario": "payments-key",
+  "mode": "replay",
+  "status": "complete",
+  "events": [
+    {
+      "index": 1,
+      "time": "step-1",
+      "kind": "started",
+      "title": "Investigation started",
+      "mode": "replay",
+      "alert": "Payment success dropped suddenly at 09:00. There was no release this morning. Investigate before proposing a rollback."
+    },
+    {
+      "index": 2,
+      "time": "step-2",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E1",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1200,
+            "errors": 4,
+            "error_percent": 0.33,
+            "p95_ms": 180,
+            "db_connections": 10
+          },
+          {
+            "window": "after",
+            "requests": 1190,
+            "errors": 1180,
+            "error_percent": 99.16,
+            "p95_ms": 90,
+            "db_connections": 10
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 3,
+      "time": "step-3",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E2",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "time": "09:00:00",
+            "service": "payments",
+            "level": "ERROR",
+            "message": "provider response 401: expired credential payments-test-key-7; expiry 09:00 UTC"
+          },
+          {
+            "time": "09:00:03",
+            "service": "payments",
+            "level": "ERROR",
+            "message": "authorization rejected before transaction creation"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 4,
+      "time": "step-4",
+      "kind": "observation",
+      "title": "deployments",
+      "evidence_id": "E3",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "service": "payments",
+            "release": "payments-v18",
+            "previous": "payments-v17",
+            "time": "yesterday 16:00",
+            "change": "log formatting only"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    {
+      "index": 5,
+      "time": "step-5",
+      "kind": "observation",
+      "title": "search_runbooks",
+      "evidence_id": "E4",
+      "arguments": {
+        "query": "expired credential"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-2",
+            "title": "Expired payment credentials",
+            "text": "A provider 401 with an explicit credential expiry is evidence of an expired credential. Check the timestamp and deployment history. Rotate the test credential in the sandbox after approval. A release rollback does not renew an expired credential. Never include secret values in a report.",
+            "score": 4.234
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    {
+      "index": 6,
+      "time": "step-6",
+      "kind": "observation",
+      "title": "metrics",
+      "evidence_id": "E5",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1250,
+            "errors": 5,
+            "error_percent": 0.4,
+            "p95_ms": 240,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 1240,
+            "errors": 1175,
+            "error_percent": 94.76,
+            "p95_ms": 250,
+            "db_connections": 18
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    {
+      "index": 7,
+      "time": "step-7",
+      "kind": "observation",
+      "title": "logs",
+      "evidence_id": "E6",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "09:00:04",
+            "service": "checkout",
+            "level": "WARN",
+            "message": "payment provider authorization unavailable"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    {
+      "index": 8,
+      "time": "step-8",
+      "kind": "observation",
+      "title": "propose_action",
+      "evidence_id": "E7",
+      "arguments": {
+        "kind": "rotate_test_credential",
+        "service": "payments",
+        "target": "payments-test-key-8",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "rotate_test_credential",
+          "service": "payments",
+          "target": "payments-test-key-8",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    },
+    {
+      "index": 9,
+      "time": "step-9",
+      "kind": "complete",
+      "title": "Evidence references checked; report ready"
+    }
+  ],
+  "evidence": {
+    "E1": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1200,
+            "errors": 4,
+            "error_percent": 0.33,
+            "p95_ms": 180,
+            "db_connections": 10
+          },
+          {
+            "window": "after",
+            "requests": 1190,
+            "errors": 1180,
+            "error_percent": 99.16,
+            "p95_ms": 90,
+            "db_connections": 10
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E2": {
+      "tool": "logs",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "time": "09:00:00",
+            "service": "payments",
+            "level": "ERROR",
+            "message": "provider response 401: expired credential payments-test-key-7; expiry 09:00 UTC"
+          },
+          {
+            "time": "09:00:03",
+            "service": "payments",
+            "level": "ERROR",
+            "message": "authorization rejected before transaction creation"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E3": {
+      "tool": "deployments",
+      "arguments": {
+        "service": "payments"
+      },
+      "result": {
+        "service": "payments",
+        "rows": [
+          {
+            "service": "payments",
+            "release": "payments-v18",
+            "previous": "payments-v17",
+            "time": "yesterday 16:00",
+            "change": "log formatting only"
+          }
+        ],
+        "source": "synthetic deployments"
+      }
+    },
+    "E4": {
+      "tool": "search_runbooks",
+      "arguments": {
+        "query": "expired credential"
+      },
+      "result": {
+        "sections": [
+          {
+            "source": "runbook-2",
+            "title": "Expired payment credentials",
+            "text": "A provider 401 with an explicit credential expiry is evidence of an expired credential. Check the timestamp and deployment history. Rotate the test credential in the sandbox after approval. A release rollback does not renew an expired credential. Never include secret values in a report.",
+            "score": 4.234
+          }
+        ],
+        "source": "local runbooks"
+      }
+    },
+    "E5": {
+      "tool": "metrics",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "window": "before",
+            "requests": 1250,
+            "errors": 5,
+            "error_percent": 0.4,
+            "p95_ms": 240,
+            "db_connections": 18
+          },
+          {
+            "window": "after",
+            "requests": 1240,
+            "errors": 1175,
+            "error_percent": 94.76,
+            "p95_ms": 250,
+            "db_connections": 18
+          }
+        ],
+        "source": "synthetic telemetry SQL"
+      }
+    },
+    "E6": {
+      "tool": "logs",
+      "arguments": {
+        "service": "checkout"
+      },
+      "result": {
+        "service": "checkout",
+        "rows": [
+          {
+            "time": "09:00:04",
+            "service": "checkout",
+            "level": "WARN",
+            "message": "payment provider authorization unavailable"
+          }
+        ],
+        "source": "synthetic logs"
+      }
+    },
+    "E7": {
+      "tool": "propose_action",
+      "arguments": {
+        "kind": "rotate_test_credential",
+        "service": "payments",
+        "target": "payments-test-key-8",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval."
+      },
+      "result": {
+        "action": {
+          "id": "action-1",
+          "kind": "rotate_test_credential",
+          "service": "payments",
+          "target": "payments-test-key-8",
+          "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+          "evidence_ids": [
+            "E2",
+            "E3"
+          ],
+          "environment": "sandbox",
+          "status": "pending_approval",
+          "version": 0
+        },
+        "executed": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "id": "action-1",
+      "kind": "rotate_test_credential",
+      "service": "payments",
+      "target": "payments-test-key-8",
+      "reason": "Logs and release context support this sandbox proposal. Verify recovery after approval.",
+      "evidence_ids": [
+        "E2",
+        "E3"
+      ],
+      "environment": "sandbox",
+      "status": "pending_approval",
+      "version": 0
+    }
+  ],
+  "answer": {
+    "diagnosis": "expired credential",
+    "summary": "The observations are consistent with expired credential. This is the scripted example diagnosis, not an independently measured model result.",
+    "confidence": "medium",
+    "alternative": "Inspected checkout telemetry and logs. A separate failure there is less consistent with this fixture; causality still needs a recovery check.",
+    "next_step": "Review the proposed action, then compare fresh error rates and the original symptom. The sandbox records approval but does not generate real recovery data.",
+    "findings": [
+      {
+        "statement": "The affected service logs contain a direct diagnostic signal.",
+        "evidence_id": "E2",
+        "quote": "provider response 401: expired credential payments-test-key-7; expiry 09:00 UTC"
+      }
+    ]
+  },
+  "usage": {},
+  "errors": [],
+  "tool_calls": 7,
+  "elapsed_ms": null,
+  "decisions": []
+}
